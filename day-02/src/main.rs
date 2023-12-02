@@ -11,9 +11,8 @@ impl From<&str> for CubeSet {
     fn from(set_str: &str) -> CubeSet {
         let mut cube_set = CubeSet::default();
         for set_part_str in set_str.split(", ") {
-            let mut set_part_iter = set_part_str.splitn(2, ' ');
-            let amount: u8 = set_part_iter.next().unwrap().parse().unwrap();
-            let color = set_part_iter.next().unwrap();
+            let (amount_str, color) = set_part_str.split_once(' ').unwrap();
+            let amount: u8 = amount_str.parse().unwrap();
             match color {
                 "red" => cube_set.r = amount,
                 "green" => cube_set.g = amount,
@@ -29,22 +28,10 @@ fn parse_input(input: &str) -> BTreeMap<u8, Vec<CubeSet>> {
     input
         .lines()
         .map(|line| {
-            let mut parts = line.splitn(2, ": ");
-            let game: u8 = parts
-                .next()
-                .unwrap()
-                .trim_start_matches("Game ")
-                .parse()
-                .unwrap();
-
-            let cube_sets: Vec<_> = parts
-                .next()
-                .unwrap()
-                .split("; ")
-                .map(CubeSet::from)
-                .collect();
-
-            (game, cube_sets)
+            let (game_str, cube_sets_str) = line.split_once(": ").unwrap();
+            let game_num: u8 = game_str.trim_start_matches("Game ").parse().unwrap();
+            let cube_sets: Vec<_> = cube_sets_str.split("; ").map(CubeSet::from).collect();
+            (game_num, cube_sets)
         })
         .collect()
 }
