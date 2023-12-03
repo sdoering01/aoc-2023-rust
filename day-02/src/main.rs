@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 #[derive(Default, Debug)]
 struct CubeSet {
     r: u8,
@@ -24,16 +22,17 @@ impl From<&str> for CubeSet {
     }
 }
 
-fn parse_input(input: &str) -> BTreeMap<u8, Vec<CubeSet>> {
-    input
-        .lines()
-        .map(|line| {
-            let (game_str, cube_sets_str) = line.split_once(": ").unwrap();
-            let game_num: u8 = game_str.trim_start_matches("Game ").parse().unwrap();
-            let cube_sets: Vec<_> = cube_sets_str.split("; ").map(CubeSet::from).collect();
-            (game_num, cube_sets)
-        })
-        .collect()
+// Returning owned values would probably be more appropriate, but this also works, for the sake of
+// trying things out.
+fn parse_input<'i>(
+    input: &'i str,
+) -> impl Iterator<Item = (u8, impl Iterator<Item = CubeSet> + 'i)> + 'i {
+    input.lines().map(|line| {
+        let (game_str, cube_sets_str) = line.split_once(": ").unwrap();
+        let game_num: u8 = game_str.trim_start_matches("Game ").parse().unwrap();
+        let cube_sets = cube_sets_str.split("; ").map(CubeSet::from);
+        (game_num, cube_sets)
+    })
 }
 
 fn part1(input: &str) -> u64 {
@@ -46,12 +45,15 @@ fn part1(input: &str) -> u64 {
 
     games
         .into_iter()
-        .filter(|(_, cube_sets)| {
-            cube_sets.iter().all(|cube_set| {
+        .filter_map(|(num, ref mut cube_sets)| {
+            if cube_sets.all(|cube_set| {
                 cube_set.r <= bag_set.r && cube_set.g <= bag_set.g && cube_set.b <= bag_set.b
-            })
+            }) {
+                Some(u64::from(num))
+            } else {
+                None
+            }
         })
-        .map(|(num, _)| u64::from(num))
         .sum()
 }
 
@@ -59,8 +61,7 @@ fn part2(input: &str) -> u64 {
     let games = parse_input(input);
 
     games
-        .into_values()
-        .map(|cube_sets| {
+        .map(|(_, cube_sets)| {
             let mut max_set = CubeSet::default();
             for cube_set in cube_sets {
                 max_set.r = u8::max(max_set.r, cube_set.r);
